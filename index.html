@@ -298,6 +298,25 @@
           </div>
 
           <hr style="border-color: var(--border); margin: 15px 0;">
+
+          <!-- GERENCIAR SERVIÇOS E PREÇOS -->
+          <div class="card-title">✂️ Gerenciar Serviços e Preços</div>
+          <div class="field">
+            <label for="barbeiro-servico-nome">Nome do Serviço:</label>
+            <input type="text" id="barbeiro-servico-nome" placeholder="Ex: Pezinho">
+          </div>
+          <div class="field">
+            <label for="barbeiro-servico-preco">Preço (R$):</label>
+            <input type="number" id="barbeiro-servico-preco" placeholder="Ex: 15">
+          </div>
+          <button class="btn-main" onclick="adicionarServico()">Salvar Serviço</button>
+
+          <div style="margin-top: 15px;">
+            <label style="font-size: 12px; color: var(--muted);">Serviços Cadastrados:</label>
+            <div id="lista-servicos-barbeiro" style="margin-top: 8px;"></div>
+          </div>
+
+          <hr style="border-color: var(--border); margin: 15px 0;">
           
           <div class="card-title">📋 Agendamentos Marcados</div>
           <div id="lista-agendamentos-barbeiro"></div>
@@ -306,10 +325,7 @@
         <!-- TABELA DE SERVIÇOS -->
         <div class="card">
           <div class="card-title">💈 Tabela de Serviços</div>
-          <div class="service-item"><span>Corte Masculino</span><span class="price-tag">R$ 35,00</span></div>
-          <div class="service-item"><span>Barba Completa</span><span class="price-tag">R$ 25,00</span></div>
-          <div class="service-item"><span>Corte + Barba (Combo)</span><span class="price-tag">R$ 55,00</span></div>
-          <div class="service-item"><span>Sobrancelha</span><span class="price-tag">R$ 10,00</span></div>
+          <div id="tabela-servicos-cliente"></div>
         </div>
 
         <!-- FORMULÁRIO DE AGENDAMENTO -->
@@ -323,12 +339,7 @@
 
           <div class="field">
             <label for="cliente-servico">Escolha o Serviço:</label>
-            <select id="cliente-servico">
-              <option value="Corte Masculino (R$ 35)">Corte Masculino - R$ 35,00</option>
-              <option value="Barba Completa (R$ 25)">Barba Completa - R$ 25,00</option>
-              <option value="Combo Corte + Barba (R$ 55)">Combo Corte + Barba - R$ 55,00</option>
-              <option value="Sobrancelha (R$ 10)">Sobrancelha - R$ 10,00</option>
-            </select>
+            <select id="cliente-servico"></select>
           </div>
 
           <div class="field">
@@ -368,19 +379,26 @@
     const SENHA_BARBEIRO = "123456";
 
     let horariosBase = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+    let listaServicos = [
+      { nome: "Corte Masculino", preco: 35 },
+      { nome: "Barba Completa", preco: 25 },
+      { nome: "Corte + Barba (Combo)", preco: 55 },
+      { nome: "Sobrancelha", preco: 10 }
+    ];
     let usuariosCadastrados = [];
     let agendamentosRealizados = [];
 
     document.addEventListener("DOMContentLoaded", function() {
-      // Configura data mínima para hoje
       const hoje = new Date().toISOString().split('T')[0];
       const campoData = document.getElementById('cliente-data');
       campoData.min = hoje;
       campoData.value = hoje;
 
-      // Carrega banco de dados local
       if (localStorage.getItem('horarios_barbearia')) {
         horariosBase = JSON.parse(localStorage.getItem('horarios_barbearia'));
+      }
+      if (localStorage.getItem('servicos_barbearia')) {
+        listaServicos = JSON.parse(localStorage.getItem('servicos_barbearia'));
       }
       if (localStorage.getItem('usuarios_barbearia')) {
         usuariosCadastrados = JSON.parse(localStorage.getItem('usuarios_barbearia'));
@@ -389,6 +407,7 @@
         agendamentosRealizados = JSON.parse(localStorage.getItem('agendamentos_barbearia'));
       }
 
+      atualizarInterfaceServicos();
       atualizarSelectHorarios();
     });
 
@@ -397,6 +416,77 @@
       toast.textContent = mensagem;
       toast.className = 'toast show ' + tipo;
       setTimeout(() => { toast.className = 'toast'; }, 3000);
+    }
+
+    function atualizarInterfaceServicos() {
+      // Tabela de Serviços no Card
+      const divTabela = document.getElementById('tabela-servicos-cliente');
+      divTabela.innerHTML = '';
+      
+      // Select no Formulário
+      const selectServico = document.getElementById('cliente-servico');
+      selectServico.innerHTML = '';
+
+      listaServicos.forEach(s => {
+        divTabela.innerHTML += `
+          <div class="service-item">
+            <span>${s.nome}</span>
+            <span class="price-tag">R$ ${Number(s.preco).toFixed(2).replace('.', ',')}</span>
+          </div>
+        `;
+
+        const opt = document.createElement('option');
+        opt.value = `${s.nome} (R$ ${s.preco})`;
+        opt.textContent = `${s.nome} - R$ ${Number(s.preco).toFixed(2).replace('.', ',')}`;
+        selectServico.appendChild(opt);
+      });
+
+      renderizarServicosBarbeiro();
+    }
+
+    function adicionarServico() {
+      const nome = document.getElementById('barbeiro-servico-nome').value.trim();
+      const preco = parseFloat(document.getElementById('barbeiro-servico-preco').value);
+
+      if (!nome || isNaN(preco)) {
+        return mostrarToast("Preencha o nome e o preço corretamente!", "error");
+      }
+
+      const idx = listaServicos.findIndex(s => s.nome.toLowerCase() === nome.toLowerCase());
+      if (idx >= 0) {
+        listaServicos[idx].preco = preco;
+        mostrarToast("Preço do serviço atualizado!", "success");
+      } else {
+        listaServicos.push({ nome, preco });
+        mostrarToast("Novo serviço adicionado!", "success");
+      }
+
+      localStorage.setItem('servicos_barbearia', JSON.stringify(listaServicos));
+      document.getElementById('barbeiro-servico-nome').value = '';
+      document.getElementById('barbeiro-servico-preco').value = '';
+      atualizarInterfaceServicos();
+    }
+
+    function removerServico(index) {
+      listaServicos.splice(index, 1);
+      localStorage.setItem('servicos_barbearia', JSON.stringify(listaServicos));
+      atualizarInterfaceServicos();
+      mostrarToast("Serviço removido!", "success");
+    }
+
+    function renderizarServicosBarbeiro() {
+      const divLista = document.getElementById('lista-servicos-barbeiro');
+      if (!divLista) return;
+      divLista.innerHTML = '';
+
+      listaServicos.forEach((s, i) => {
+        divLista.innerHTML += `
+          <div class="item-list">
+            <span>✂️ ${s.nome} - <strong>R$ ${Number(s.preco).toFixed(2).replace('.', ',')}</strong></span>
+            <button class="btn-sm-del" onclick="removerServico(${i})">Remover</button>
+          </div>
+        `;
+      });
     }
 
     function cadastrarUsuario() {
@@ -430,13 +520,11 @@
         return mostrarToast("Preencha e-mail e senha!", "error");
       }
 
-      // Check Barbeiro
       if (email === EMAIL_BARBEIRO.toLowerCase() && senha === SENHA_BARBEIRO) {
         entrarNoApp(true, "Jhoninho");
         return;
       }
 
-      // Check Cliente
       const usuario = usuariosCadastrados.find(u => u.email === email && u.senha === senha);
       if (usuario) {
         entrarNoApp(false, usuario.nome);
@@ -481,7 +569,6 @@
       const dataSelecionada = document.getElementById('cliente-data').value;
       select.innerHTML = '<option value="">Selecione o horário</option>';
 
-      // Filtra horários que já foram ocupados na mesma data
       const ocupadosNaData = agendamentosRealizados
         .filter(a => a.data === dataSelecionada)
         .map(a => a.horario);
@@ -523,7 +610,6 @@
     }
 
     function renderizarPainelBarbeiro() {
-      // Renderiza lista de horários da grade
       const divGrade = document.getElementById('lista-horarios-barbeiro');
       divGrade.innerHTML = '';
       horariosBase.forEach(h => {
@@ -535,7 +621,8 @@
         `;
       });
 
-      // Renderiza agendamentos marcados
+      renderizarServicosBarbeiro();
+
       const divAgendamentos = document.getElementById('lista-agendamentos-barbeiro');
       divAgendamentos.innerHTML = '';
 
@@ -582,14 +669,12 @@
         return;
       }
 
-      // Validação de Duplicidade
       const jaExiste = agendamentosRealizados.some(a => a.data === data && a.horario === horario);
       if (jaExiste) {
         mostrarToast("Esse horário já foi reservado por outro cliente!", "error");
         return;
       }
 
-      // Salva Agendamento no BD
       agendamentosRealizados.push({ nome, servico, data, horario });
       localStorage.setItem('agendamentos_barbearia', JSON.stringify(agendamentosRealizados));
 
