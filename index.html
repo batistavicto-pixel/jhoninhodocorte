@@ -369,9 +369,8 @@
   <!-- FIREBASE SDK V10 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Mantenha ou atualize suas credenciais do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSy...",
       authDomain: "jhoninha-do-corte.firebaseapp.com",
@@ -388,14 +387,14 @@
     const EMAIL_BARBEIRO = "Appjhoninhodocorte@gmail.com";
     const SENHA_BARBEIRO = "123456";
 
-    let horariosBase = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
-    let listaServicos = [
+    let horariosBase = JSON.parse(localStorage.getItem('horarios_barbearia')) || ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+    let listaServicos = JSON.parse(localStorage.getItem('servicos_barbearia')) || [
       { nome: "Corte Masculino", preco: 35 },
       { nome: "Barba Completa", preco: 25 },
       { nome: "Corte + Barba (Combo)", preco: 55 },
       { nome: "Sobrancelha", preco: 10 }
     ];
-    let usuariosCadastrados = [];
+    let usuariosCadastrados = JSON.parse(localStorage.getItem('usuarios_barbearia')) || [];
     let agendamentosRealizados = [];
 
     window.addEventListener("DOMContentLoaded", () => {
@@ -404,14 +403,12 @@
       campoData.min = hoje;
       campoData.value = hoje;
 
-      // Recupera sessão persistida
       const sessaoAtiva = localStorage.getItem('sessao_ativa');
       if (sessaoAtiva) {
         const user = JSON.parse(sessaoAtiva);
         entrarNoApp(user.isBarbeiro, user.nome);
       }
 
-      // Sincronização Realtime de Agendamentos via Firestore
       onSnapshot(collection(db, "agendamentos"), (snapshot) => {
         agendamentosRealizados = [];
         snapshot.forEach((docSnap) => {
@@ -422,6 +419,7 @@
       });
 
       atualizarInterfaceServicos();
+      renderizarHorariosBarbeiro();
     });
 
     function mostrarToast(mensagem, tipo = 'normal') {
@@ -429,6 +427,87 @@
       toast.textContent = mensagem;
       toast.className = 'toast show ' + tipo;
       setTimeout(() => { toast.className = 'toast'; }, 3000);
+    }
+
+    /* GERENCIAMENTO DE HORÁRIOS */
+    window.adicionarHorario = () => {
+      const input = document.getElementById('barbeiro-horario');
+      const novo = input.value;
+      if (!novo) return mostrarToast("Selecione um horário válido!", "error");
+      if (horariosBase.includes(novo)) return mostrarToast("Este horário já está na grade!", "error");
+
+      horariosBase.push(novo);
+      horariosBase.sort();
+      localStorage.setItem('horarios_barbearia', JSON.stringify(horariosBase));
+      input.value = '';
+      
+      renderizarHorariosBarbeiro();
+      atualizarSelectHorarios();
+      mostrarToast("Horário adicionado à grade!", "success");
+    };
+
+    window.excluirHorario = (horario) => {
+      horariosBase = horariosBase.filter(h => h !== horario);
+      localStorage.setItem('horarios_barbearia', JSON.stringify(horariosBase));
+      renderizarHorariosBarbeiro();
+      atualizarSelectHorarios();
+      mostrarToast("Horário removido da grade!", "success");
+    };
+
+    function renderizarHorariosBarbeiro() {
+      const container = document.getElementById('lista-horarios-barbeiro');
+      if (!container) return;
+      container.innerHTML = '';
+
+      horariosBase.forEach(h => {
+        container.innerHTML += `
+          <div class="item-list">
+            <span>⏰ ${h}</span>
+            <button class="btn-sm-del" onclick="excluirHorario('${h}')">Excluir</button>
+          </div>
+        `;
+      });
+    }
+
+    /* GERENCIAMENTO DE SERVIÇOS */
+    window.adicionarServico = () => {
+      const nomeInput = document.getElementById('barbeiro-servico-nome');
+      const precoInput = document.getElementById('barbeiro-servico-preco');
+      const nome = nomeInput.value.trim();
+      const preco = parseFloat(precoInput.value);
+
+      if (!nome || isNaN(preco)) return mostrarToast("Informe o nome e um preço válido!", "error");
+
+      listaServicos.push({ nome, preco });
+      localStorage.setItem('servicos_barbearia', JSON.stringify(listaServicos));
+      
+      nomeInput.value = '';
+      precoInput.value = '';
+      
+      atualizarInterfaceServicos();
+      mostrarToast("Serviço salvo com sucesso!", "success");
+    };
+
+    window.excluirServico = (index) => {
+      listaServicos.splice(index, 1);
+      localStorage.setItem('servicos_barbearia', JSON.stringify(listaServicos));
+      atualizarInterfaceServicos();
+      mostrarToast("Serviço removido com sucesso!", "success");
+    };
+
+    function renderizarServicosBarbeiro() {
+      const container = document.getElementById('lista-servicos-barbeiro');
+      if (!container) return;
+      container.innerHTML = '';
+
+      listaServicos.forEach((s, index) => {
+        container.innerHTML += `
+          <div class="item-list">
+            <span>✂️ ${s.nome} - R$ ${Number(s.preco).toFixed(2).replace('.', ',')}</span>
+            <button class="btn-sm-del" onclick="excluirServico(${index})">Excluir</button>
+          </div>
+        `;
+      });
     }
 
     function atualizarInterfaceServicos() {
@@ -455,6 +534,7 @@
       renderizarServicosBarbeiro();
     }
 
+    /* AUTENTICAÇÃO E NAVEGAÇÃO */
     window.cadastrarUsuario = () => {
       const nome = document.getElementById('cad-nome').value.trim();
       const email = document.getElementById('cad-email').value.trim().toLowerCase();
@@ -497,6 +577,8 @@
       if (isBarbeiro) {
         document.getElementById('painel-barbeiro').style.display = 'block';
         renderizarPainelBarbeiro();
+        renderizarHorariosBarbeiro();
+        renderizarServicosBarbeiro();
       } else {
         document.getElementById('painel-barbeiro').style.display = 'none';
       }
@@ -511,6 +593,7 @@
       document.getElementById('painel-barbeiro').style.display = 'none';
     };
 
+    /* AGENDAMENTOS */
     window.atualizarSelectHorarios = () => {
       const select = document.getElementById('cliente-horario');
       const dataSelecionada = document.getElementById('cliente-data').value;
@@ -539,7 +622,6 @@
       if (!nome || !data || !horario) return mostrarToast("Preencha seu nome, data e horário!", "error");
 
       try {
-        // Grava no Cloud Firestore
         await addDoc(collection(db, "agendamentos"), {
           nome, servico, data, horario, criadoEm: new Date()
         });
