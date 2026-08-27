@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Jhoninho do Corte</title>
+  <style>
+    :root {
+      --bg: #0f0f11;
+      --card: #1a1a1e;
+      --gold: #e5a93c;
+      --gold-hover: #f5b94c;
+      --text: #f0f0f0;
+      --muted: #a0a0a0;
+      --border: #2a2a30;
+      --danger: #e74c3c;
+      --success: #2ecc71;
+      --whatsapp: #25D366;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+    .app {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      background: var(--bg);
+      padding-bottom: 40px;
+      position: relative;
+    }
+    /* TOAST */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #1f1f23;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+      border-left: 4px solid var(--gold);
+      opacity: 0;
+      transition: all 0.35s ease;
+      max-width: 90%;
+      text-align: center;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+
+    /* LOGIN */
+    #login-screen {
+      padding: 30px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .brand {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-top: 10px;
+    }
+    .brand h1 {
+      color: var(--gold);
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .brand p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 14px;
+      background: #121215;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--gold); }
+    
+    .btn-main {
+      width: 100%;
+      padding: 14px;
+      background: var(--gold);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      background: #1e1e24;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* APP PRINCIPAL */
+    #main-app { display: none; }
+    .header {
+      background: linear-gradient(180deg, #000 0%, #1a1a1e 100%);
+      padding: 22px 20px 16px;
+      text-align: center;
+      border-bottom: 2px solid var(--gold);
+      position: relative;
+    }
+    .header h1 {
+      color: var(--gold);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .header .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .btn-logout {
+      position: absolute;
+      top: 16px;
+      right: 14px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .panel { padding: 20px; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-wsp {
+      width: 100%;
+      padding: 14px;
+      background: var(--whatsapp);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-danger {
+      width: 100%;
+      padding: 14px;
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    /* SERVIÇOS & LISTAS */
+    .service-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .service-item:last-child { border-bottom: none; }
+    .price-tag { color: var(--gold); font-weight: bold; }
+    
+    .item-list {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #121215;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .btn-sm-del {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    #painel-barbeiro { display: none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- TOAST -->
+    <div id="toast" class="toast"></div>
+
+    <!-- TELA DE LOGIN / CADASTRO -->
+    <div id="login-screen">
+      <div class="brand">
+        <h1>Jhoninho do Corte</h1>
+        <p>Estilo, Tradição e Excelência</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔑 Acessar Conta</div>
+        <div class="field">
+          <label for="login-email">E-mail:</label>
+          <input type="email" id="login-email" placeholder="seuemail@gmail.com">
+        </div>
+        <div class="field">
+          <label for="login-senha">Senha:</label>
+          <input type="password" id="login-senha" placeholder="******">
+        </div>
+        <button class="btn-main" onclick="realizarLogin()">Entrar</button>
+        <button class="btn-secondary" onclick="entrarComoVisitante()">Continuar Sem Login</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📝 Criar Conta de Cliente</div>
+        <div class="field">
+          <label for="cad-nome">Seu Nome:</label>
+          <input type="text" id="cad-nome" placeholder="Digite seu nome">
+        </div>
+        <div class="field">
+          <label for="cad-email">E-mail:</label>
+          <input type="email" id="cad-email" placeholder="seuemail@gmail.com">
+        </div>
+        <div class="field">
+          <label for="cad-senha">Senha:</label>
+          <input type="password" id="cad-senha" placeholder="Crie uma senha">
+        </div>
+        <button class="btn-secondary" style="color: var(--gold); border-color: var(--gold);" onclick="cadastrarUsuario()">Cadastrar Conta</button>
+      </div>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="main-app">
+      <div class="header">
+        <h1>Jhoninho do Corte</h1>
+        <p class="sub">Agendamento Online</p>
+        <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+      </div>
+
+      <div class="panel">
+        
+        <!-- PAINEL EXCLUSIVO DO BARBEIRO -->
+        <div class="card" id="painel-barbeiro">
+          <div class="card-title">⚙️ Painel Administrador</div>
+          
+          <div class="field">
+            <label for="barbeiro-horario">Liberar Novo Horário:</label>
+            <input type="time" id="barbeiro-horario">
+          </div>
+          <button class="btn-main" onclick="adicionarHorario()">Adicionar Horário</button>
+          
+          <div style="margin-top: 15px;">
+            <label style="font-size: 12px; color: var(--muted);">Gerenciar Horários da Grade:</label>
+            <div id="lista-horarios-barbeiro" style="margin-top: 8px;"></div>
+          </div>
+
+          <hr style="border-color: var(--border); margin: 15px 0;">
+          
+          <div class="card-title">📋 Agendamentos Marcados</div>
+          <div id="lista-agendamentos-barbeiro"></div>
+        </div>
+
+        <!-- TABELA DE SERVIÇOS -->
+        <div class="card">
+          <div class="card-title">💈 Tabela de Serviços</div>
+          <div class="service-item"><span>Corte Masculino</span><span class="price-tag">R$ 35,00</span></div>
+          <div class="service-item"><span>Barba Completa</span><span class="price-tag">R$ 25,00</span></div>
+          <div class="service-item"><span>Corte + Barba (Combo)</span><span class="price-tag">R$ 55,00</span></div>
+          <div class="service-item"><span>Sobrancelha</span><span class="price-tag">R$ 10,00</span></div>
+        </div>
+
+        <!-- FORMULÁRIO DE AGENDAMENTO -->
+        <div class="card">
+          <div class="card-title">📅 Agendar Horário</div>
+          
+          <div class="field">
+            <label for="cliente-nome">Seu Nome:</label>
+            <input type="text" id="cliente-nome" placeholder="Digite seu nome">
+          </div>
+
+          <div class="field">
+            <label for="cliente-servico">Escolha o Serviço:</label>
+            <select id="cliente-servico">
+              <option value="Corte Masculino (R$ 35)">Corte Masculino - R$ 35,00</option>
+              <option value="Barba Completa (R$ 25)">Barba Completa - R$ 25,00</option>
+              <option value="Combo Corte + Barba (R$ 55)">Combo Corte + Barba - R$ 55,00</option>
+              <option value="Sobrancelha (R$ 10)">Sobrancelha - R$ 10,00</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="cliente-data">Data do Corte:</label>
+            <input type="date" id="cliente-data" onchange="atualizarSelectHorarios()">
+          </div>
+
+          <div class="field">
+            <label for="cliente-horario">Horários Disponíveis:</label>
+            <select id="cliente-horario">
+              <option value="">Selecione o horário</option>
+            </select>
+          </div>
+
+          <button class="btn-main" onclick="confirmarAgendamento()">Confirmar e Agendar</button>
+        </div>
+
+        <!-- CANCELAMENTO -->
+        <div class="card">
+          <div class="card-title">🔄 Cancelar ou Reagendar</div>
+          <button class="btn-danger" onclick="solicitarCancelamento()">Solicitar Mudança</button>
+        </div>
+
+        <!-- WHATSAPP DIRETO -->
+        <div class="card">
+          <div class="card-title">💈 Atendimento Direto</div>
+          <button class="btn-wsp" onclick="chamarWhatsAppDirecto()">📲 Falar no WhatsApp</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TELEFONE_BARBEIRO = "5531972191362";
+    const EMAIL_BARBEIRO = "Appjhoninhodocorte@gmail.com";
+    const SENHA_BARBEIRO = "123456";
+
+    let horariosBase = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+    let usuariosCadastrados = [];
+    let agendamentosRealizados = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+      // Configura data mínima para hoje
+      const hoje = new Date().toISOString().split('T')[0];
+      const campoData = document.getElementById('cliente-data');
+      campoData.min = hoje;
+      campoData.value = hoje;
+
+      // Carrega banco de dados local
+      if (localStorage.getItem('horarios_barbearia')) {
+        horariosBase = JSON.parse(localStorage.getItem('horarios_barbearia'));
+      }
+      if (localStorage.getItem('usuarios_barbearia')) {
+        usuariosCadastrados = JSON.parse(localStorage.getItem('usuarios_barbearia'));
+      }
+      if (localStorage.getItem('agendamentos_barbearia')) {
+        agendamentosRealizados = JSON.parse(localStorage.getItem('agendamentos_barbearia'));
+      }
+
+      atualizarSelectHorarios();
+    });
+
+    function mostrarToast(mensagem, tipo = 'normal') {
+      const toast = document.getElementById('toast');
+      toast.textContent = mensagem;
+      toast.className = 'toast show ' + tipo;
+      setTimeout(() => { toast.className = 'toast'; }, 3000);
+    }
+
+    function cadastrarUsuario() {
+      const nome = document.getElementById('cad-nome').value.trim();
+      const email = document.getElementById('cad-email').value.trim().toLowerCase();
+      const senha = document.getElementById('cad-senha').value.trim();
+
+      if (!nome || !email || !senha) {
+        return mostrarToast("Preencha todos os campos do cadastro!", "error");
+      }
+
+      const existe = usuariosCadastrados.find(u => u.email === email);
+      if (existe) {
+        return mostrarToast("E-mail já cadastrado!", "error");
+      }
+
+      usuariosCadastrados.push({ nome, email, senha });
+      localStorage.setItem('usuarios_barbearia', JSON.stringify(usuariosCadastrados));
+      mostrarToast("Conta criada com sucesso! Faça seu login.", "success");
+
+      document.getElementById('cad-nome').value = '';
+      document.getElementById('cad-email').value = '';
+      document.getElementById('cad-senha').value = '';
+    }
+
+    function realizarLogin() {
+      const email = document.getElementById('login-email').value.trim().toLowerCase();
+      const senha = document.getElementById('login-senha').value.trim();
+
+      if (!email || !senha) {
+        return mostrarToast("Preencha e-mail e senha!", "error");
+      }
+
+      // Check Barbeiro
+      if (email === EMAIL_BARBEIRO.toLowerCase() && senha === SENHA_BARBEIRO) {
+        entrarNoApp(true, "Jhoninho");
+        return;
+      }
+
+      // Check Cliente
+      const usuario = usuariosCadastrados.find(u => u.email === email && u.senha === senha);
+      if (usuario) {
+        entrarNoApp(false, usuario.nome);
+      } else {
+        mostrarToast("E-mail ou senha incorretos!", "error");
+      }
+    }
+
+    function entrarComoVisitante() {
+      entrarNoApp(false, "");
+    }
+
+    function entrarNoApp(isBarbeiro, nomeUsuario) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+
+      if (nomeUsuario) {
+        document.getElementById('cliente-nome').value = nomeUsuario;
+      }
+
+      if (isBarbeiro) {
+        document.getElementById('painel-barbeiro').style.display = 'block';
+        renderizarPainelBarbeiro();
+        mostrarToast("Bem-vindo, Barbeiro!", "success");
+      } else {
+        document.getElementById('painel-barbeiro').style.display = 'none';
+      }
+
+      atualizarSelectHorarios();
+    }
+
+    function fazerLogout() {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+      document.getElementById('painel-barbeiro').style.display = 'none';
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-senha').value = '';
+    }
+
+    function atualizarSelectHorarios() {
+      const select = document.getElementById('cliente-horario');
+      const dataSelecionada = document.getElementById('cliente-data').value;
+      select.innerHTML = '<option value="">Selecione o horário</option>';
+
+      // Filtra horários que já foram ocupados na mesma data
+      const ocupadosNaData = agendamentosRealizados
+        .filter(a => a.data === dataSelecionada)
+        .map(a => a.horario);
+
+      horariosBase.forEach(h => {
+        if (!ocupadosNaData.includes(h)) {
+          const option = document.createElement('option');
+          option.value = h;
+          option.textContent = h;
+          select.appendChild(option);
+        }
+      });
+    }
+
+    function adicionarHorario() {
+      const novoHorario = document.getElementById('barbeiro-horario').value;
+      if (!novoHorario) return mostrarToast("Selecione um horário válido!", "error");
+
+      if (!horariosBase.includes(novoHorario)) {
+        horariosBase.push(novoHorario);
+        horariosBase.sort();
+        localStorage.setItem('horarios_barbearia', JSON.stringify(horariosBase));
+        
+        atualizarSelectHorarios();
+        renderizarPainelBarbeiro();
+        document.getElementById('barbeiro-horario').value = '';
+        mostrarToast("Horário " + novoHorario + " adicionado!", "success");
+      } else {
+        mostrarToast("Este horário já existe!", "error");
+      }
+    }
+
+    function removerHorarioBase(horario) {
+      horariosBase = horariosBase.filter(h => h !== horario);
+      localStorage.setItem('horarios_barbearia', JSON.stringify(horariosBase));
+      atualizarSelectHorarios();
+      renderizarPainelBarbeiro();
+      mostrarToast("Horário removido!", "success");
+    }
+
+    function renderizarPainelBarbeiro() {
+      // Renderiza lista de horários da grade
+      const divGrade = document.getElementById('lista-horarios-barbeiro');
+      divGrade.innerHTML = '';
+      horariosBase.forEach(h => {
+        divGrade.innerHTML += `
+          <div class="item-list">
+            <span>⏰ ${h}</span>
+            <button class="btn-sm-del" onclick="removerHorarioBase('${h}')">Remover</button>
+          </div>
+        `;
+      });
+
+      // Renderiza agendamentos marcados
+      const divAgendamentos = document.getElementById('lista-agendamentos-barbeiro');
+      divAgendamentos.innerHTML = '';
+
+      if (agendamentosRealizados.length === 0) {
+        divAgendamentos.innerHTML = '<p style="font-size: 13px; color: var(--muted);">Nenhum agendamento realizado ainda.</p>';
+        return;
+      }
+
+      agendamentosRealizados.forEach((a, index) => {
+        const dataFormatada = a.data.split('-').reverse().join('/');
+        divAgendamentos.innerHTML += `
+          <div class="item-list" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+            <div style="width: 100%; display: flex; justify-content: space-between;">
+              <strong>👤 ${a.nome}</strong>
+              <button class="btn-sm-del" onclick="cancelarAgendamentoBarbeiro(${index})">Cancelar</button>
+            </div>
+            <div style="color: var(--muted); font-size: 12px;">🗓️ ${dataFormatada} às ${a.horario}</div>
+            <div style="color: var(--gold); font-size: 12px;">✂️ ${a.servico}</div>
+          </div>
+        `;
+      });
+    }
+
+    function cancelarAgendamentoBarbeiro(index) {
+      agendamentosRealizados.splice(index, 1);
+      localStorage.setItem('agendamentos_barbearia', JSON.stringify(agendamentosRealizados));
+      renderizarPainelBarbeiro();
+      atualizarSelectHorarios();
+      mostrarToast("Agendamento cancelado com sucesso!", "success");
+    }
+
+    function abrirZap(mensagem) {
+      window.location.href = "https://wa.me/" + TELEFONE_BARBEIRO + "?text=" + encodeURIComponent(mensagem);
+    }
+
+    function confirmarAgendamento() {
+      const nome = document.getElementById('cliente-nome').value.trim();
+      const servico = document.getElementById('cliente-servico').value;
+      const data = document.getElementById('cliente-data').value;
+      const horario = document.getElementById('cliente-horario').value;
+
+      if (!nome || !data || !horario) {
+        mostrarToast("Preencha seu nome, data e horário!", "error");
+        return;
+      }
+
+      // Validação de Duplicidade
+      const jaExiste = agendamentosRealizados.some(a => a.data === data && a.horario === horario);
+      if (jaExiste) {
+        mostrarToast("Esse horário já foi reservado por outro cliente!", "error");
+        return;
+      }
+
+      // Salva Agendamento no BD
+      agendamentosRealizados.push({ nome, servico, data, horario });
+      localStorage.setItem('agendamentos_barbearia', JSON.stringify(agendamentosRealizados));
+
+      atualizarSelectHorarios();
+
+      const dataFormatada = data.split('-').reverse().join('/');
+      const msg = `Olá Jhoninha! Meu nome é ${nome}.\nGostaria de confirmar meu agendamento:\n\n✂️ *Serviço:* ${servico}\n🗓️ *Data:* ${dataFormatada}\n⏰ *Horário:* ${horario}`;
+      
+      abrirZap(msg);
+    }
+
+    function solicitarCancelamento() {
+      const nome = prompt("Digite seu nome:");
+      if (nome) {
+        abrirZap("Olá Jhoninha, meu nome é " + nome + ". Preciso cancelar ou reagendar meu horário.");
+      }
+    }
+
+    function chamarWhatsAppDirecto() {
+      abrirZap("Olá Jhoninha! Gostaria de tirar uma dúvida sobre os horários.");
+    }
+  </script>
+</body>
+</html>
